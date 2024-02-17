@@ -17,15 +17,18 @@ def find_and_sync_files(path, dry_run=False):
     to_delete = cr3_files - jpg_files
 
     # 根据dry-run标志进行操作
+    cnt = 0
     for root, dirs, files in os.walk(path):
         for file in files:
             if os.path.splitext(file)[0] in to_delete and file.lower().endswith('.cr3'):
                 file_path = os.path.join(root, file)
+                cnt = cnt + 1
                 if dry_run:
                     print(f"Would delete: {file_path}")
                 else:
                     os.remove(file_path)
                     print(f"Deleted: {file_path}")
+    print(f"Totally deleted {cnt} files")
 
 def main():
     parser = argparse.ArgumentParser(description="Sync .cr3 files with .jpg files by deleting .cr3 files without a corresponding .jpg file.")
