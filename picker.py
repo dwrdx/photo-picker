@@ -3,35 +3,39 @@ import argparse
 import shutil
 
 
-
 def find_and_sync_files(path, dry_run=False):
-    cr3_files = set()
+    raw_formats = ['.cr3', '.raf']  # 添加你需要支持的其他原始文件格式
+
+    raw_files = set()
     jpg_files = set()
 
     # 遍历给定路径及所有子路径
     for root, dirs, files in os.walk(path):
         for file in files:
-            if file.lower().endswith('.cr3'):
-                cr3_files.add(os.path.splitext(file)[0])
-            elif file.lower().endswith('.jpg'):
+            file_ext = os.path.splitext(file)[1].lower()
+            if file_ext in raw_formats:
+                raw_files.add((os.path.splitext(file)[0], file_ext))  # 保持文件名和格式
+            elif file_ext == '.jpg':
                 jpg_files.add(os.path.splitext(file)[0])
 
-    # 找出存在.cr3但不存在对应.jpg的文件
-    to_delete = cr3_files - jpg_files
+    # 找出存在原始格式但不存在对应.jpg的文件
+    to_delete = {name for name, ext in raw_files if name not in jpg_files}
 
     # 根据dry-run标志进行操作
     cnt = 0
     for root, dirs, files in os.walk(path):
         for file in files:
-            if os.path.splitext(file)[0] in to_delete and file.lower().endswith('.cr3'):
+            base_name, file_ext = os.path.splitext(file)[0], os.path.splitext(file)[1].lower()
+            if (base_name, file_ext) in raw_files and base_name in to_delete:
                 file_path = os.path.join(root, file)
-                cnt = cnt + 1
+                cnt += 1
                 if dry_run:
                     print(f"Would delete: {file_path}")
                 else:
                     os.remove(file_path)
                     print(f"Deleted: {file_path}")
     print(f"Totally deleted {cnt} files")
+
 
 def organize_files(path, dry_run):
     # 检查路径是否存在
@@ -40,7 +44,7 @@ def organize_files(path, dry_run):
         return
     
     # 定义支持的图片文件扩展名
-    supported_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.cr3'}
+    supported_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.cr3', '.raf'}
     
     # 获取路径下所有文件
     files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
